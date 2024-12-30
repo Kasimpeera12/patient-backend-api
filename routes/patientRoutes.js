@@ -2,63 +2,57 @@ const express = require('express');
 const router = express.Router();
 const Patient = require('../models/Patient');
 
-// GET: Fetch all patients
+// Get all patients
 router.get('/', async (req, res) => {
     try {
         const patients = await Patient.find();
         res.json(patients);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: err.message });
     }
 });
 
-// POST: Add a new patient
+// Add a new patient
 router.post('/', async (req, res) => {
-    const { patient_id, patient_name, patient_joindate, patient_discharge_date } = req.body;
+    const patient = new Patient(req.body);
     try {
-        const newPatient = new Patient({
-            patient_id,
-            patient_name,
-            patient_joindate,
-            patient_discharge_date,
-        });
-        await newPatient.save();
-        res.json(newPatient);
+        const newPatient = await patient.save();
+        res.status(201).json(newPatient);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(400).json({ message: err.message });
     }
 });
 
-// PUT: Update an existing patient by patient_id
-router.put('/:patient_id', async (req, res) => {
-    const { patient_id } = req.params;
-    const { patient_name, patient_joindate, patient_discharge_date } = req.body;
+// Get a patient by ID
+router.get('/:id', async (req, res) => {
     try {
-        const updatedPatient = await Patient.findOneAndUpdate(
-            { patient_id },
-            { patient_name, patient_joindate, patient_discharge_date },
-            { new: true } // Return the updated document
-        );
-        if (!updatedPatient) {
-            return res.status(404).json({ error: 'Patient not found' });
-        }
+        const patient = await Patient.findById(req.params.id);
+        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        res.json(patient);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Update a patient by ID
+router.put('/:id', async (req, res) => {
+    try {
+        const updatedPatient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updatedPatient) return res.status(404).json({ message: 'Patient not found' });
         res.json(updatedPatient);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(400).json({ message: err.message });
     }
 });
 
-// DELETE: Delete a patient by patient_id
-router.delete('/:patient_id', async (req, res) => {
-    const { patient_id } = req.params;
+// Delete a patient by ID
+router.delete('/:id', async (req, res) => {
     try {
-        const deletedPatient = await Patient.findOneAndDelete({ patient_id });
-        if (!deletedPatient) {
-            return res.status(404).json({ error: 'Patient not found' });
-        }
-        res.json({ message: 'Patient deleted successfully', patient: deletedPatient });
+        const patient = await Patient.findByIdAndDelete(req.params.id);
+        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        res.json({ message: 'Patient deleted' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: err.message });
     }
 });
 
