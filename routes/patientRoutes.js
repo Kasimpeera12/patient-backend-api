@@ -2,58 +2,41 @@ const express = require('express');
 const router = express.Router();
 const Patient = require('../models/Patient');
 
-// Get all patients
+// GET: Fetch all patients
 router.get('/', async (req, res) => {
-    try {
-        const patients = await Patient.find();
-        res.json(patients);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+  try {
+    const patients = await Patient.find();
+    res.json(patients);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Add a new patient
+// POST: Add a new patient
 router.post('/', async (req, res) => {
-    const patient = new Patient(req.body);
-    try {
-        const newPatient = await patient.save();
-        res.status(201).json(newPatient);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
+  try {
+    const newPatient = new Patient(req.body);
+    await newPatient.save();
+    res.json(newPatient);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-// Get a patient by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const patient = await Patient.findById(req.params.id);
-        if (!patient) return res.status(404).json({ message: 'Patient not found' });
-        res.json(patient);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+router.delete('/api/patients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Patient.findByIdAndDelete(id);
 
-// Update a patient by ID
-router.put('/:id', async (req, res) => {
-    try {
-        const updatedPatient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedPatient) return res.status(404).json({ message: 'Patient not found' });
-        res.json(updatedPatient);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+    if (!result) {
+      return res.status(404).json({ error: 'Patient not found' });
     }
-});
 
-// Delete a patient by ID
-router.delete('/:id', async (req, res) => {
-    try {
-        const patient = await Patient.findByIdAndDelete(req.params.id);
-        if (!patient) return res.status(404).json({ message: 'Patient not found' });
-        res.json({ message: 'Patient deleted' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    res.json({ message: 'Patient deleted successfully', id });
+  } catch (err) {
+    console.error('Error deleting patient:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router;
